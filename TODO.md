@@ -1,0 +1,7 @@
+- [ ] Actualizar static/js/app.js para que la cámara funcione mejor
+  - [ ] Habilitar botón "Capturar" al iniciar la cámara
+  - [ ] Habilitar botón "Verificar EPP" tras capturar (y/o seleccionar imagen)
+  - [ ] Mostrar preview de la captura
+  - [ ] Mensajes de error específicos para permisos/ausencia de cámara
+  - [ ] Validar videoWidth/videoHeight antes de capturar
+- [ ] Probar en navegador (HTTPS / permisos) y revisar consola
