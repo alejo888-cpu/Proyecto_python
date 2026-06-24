@@ -1,4 +1,9 @@
-flask
-opencv-python-headless
-pillow
-numpy
+flask>=3.0
+werkzeug>=3.0
+onnxruntime>=1.18
+pillow>=10.0
+numpy>=1.26
+# Para exportar el modelo (solo necesario en desarrollo):
+# torch>=2.0
+# torchvision>=0.15
+# ultralytics>=8.0

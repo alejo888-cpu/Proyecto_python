@@ -1,27 +1,166 @@
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base: #0d1117;
+  --bg-surface: #161b22;
+  --bg-elevated: #21262d;
+  --border-subtle: #30363d;
+  --border-muted: #21262d;
+
+  --color-blue: #58a6ff;
+  --color-blue-bg: #0d2137;
+  --color-blue-border: #1f6feb;
+
+  --color-green: #3fb950;
+  --color-green-bg: #0f2d1e;
+  --color-green-border: #238636;
+
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #3d444d;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --font-mono: 'Courier New', 'Consolas', monospace;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background: #f4f4f4;
+  background-color: var(--bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1.5rem;
 }
 
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
+/* ── Encabezado ── */
+h1 {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-blue);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-left: 3px solid var(--color-blue);
+  padding-left: 12px;
+  margin-bottom: 1.75rem;
+  width: 100%;
+  max-width: 480px;
 }
 
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+/* ── Video ── */
+#video {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  background-color: var(--bg-surface);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: block;
+  object-fit: cover;
 }
 
-video {
-    width: 100%;
-    max-width: 500px;
-    border-radius: 10px;
+/* ── Canvas (oculto) ── */
+#canvas {
+  display: none;
 }
 
-canvas {
-    display: none;
+/* ── Botones ── */
+button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border-subtle);
+  cursor: pointer;
+  transition: opacity 0.15s, background-color 0.15s;
+  outline: none;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+#startCamera {
+  background-color: var(--color-blue-bg);
+  border-color: var(--color-blue-border);
+  color: var(--color-blue);
+}
+
+#startCamera:hover {
+  background-color: #112845;
+}
+
+#capture {
+  background-color: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--color-text-secondary);
+}
+
+#capture:hover {
+  background-color: var(--bg-elevated);
+  color: var(--color-text-primary);
+}
+
+#sendImage {
+  background-color: var(--color-green-bg);
+  border-color: var(--color-green-border);
+  color: var(--color-green);
+}
+
+#sendImage:hover {
+  background-color: #132b1e;
+}
+
+/* ── Input de archivo ── */
+input[type="file"] {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background-color: var(--bg-surface);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  width: 100%;
+  max-width: 480px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+input[type="file"]::file-selector-button {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg-elevated);
+  color: var(--color-text-secondary);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #2d333b;
+}
+
+/* ── Layout general ── */
+body > * {
+  width: 100%;
+  max-width: 480px;
+}
+
+body > br {
+  display: none;
 }
