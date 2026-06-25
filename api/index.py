@@ -2,36 +2,45 @@
 index.py — Servidor Flask para detección/clasificación de imágenes con ONNX.
 """
 
-import os, uuid
+import os
+import uuid
 from flask import Flask, request, jsonify, render_template
-from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from detector import get_detector
 
-BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
-ALLOWED_EXT   = {"jpg", "jpeg", "png", "webp", "bmp", "gif"}
-CONF_THRESHOLD = 2.0   # % mínimo de confianza para considerar una detección válida
+
+ALLOWED_EXT = {"jpg", "jpeg", "png", "webp", "bmp", "gif"}
+CONF_THRESHOLD = 45.0  # % mínimo de confianza para considerar una detección válida.
+                       # Sincronizado con CONF_THRESHOLD de detector.py (0.45).
+                       # detector.py ya filtra internamente antes del NMS;
+                       # este umbral en index.py es una segunda capa de
+                       # seguridad en la misma escala (0-100).
 
 app = Flask(
     __name__,
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static"),
 )
+
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-def allowed_file(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
+    )
 
 
 @app.errorhandler(RequestEntityTooLarge)
 def handle_too_large(e):
     return jsonify({
         "error": "ARCHIVO_DEMASIADO_GRANDE",
-        "mensaje": "La imagen supera el límite de 16 MB. Usa una imagen más pequeña."
+        "mensaje": "La imagen supera el límite de 16 MB."
     }), 413
 
 
@@ -44,18 +53,29 @@ def home():
 def health():
     try:
         det = get_detector()
-        return jsonify({"status": "ok", "modelo": "cargado", "etiquetas": len(det.labels)})
+
+        return jsonify({
+            "status": "ok",
+            "modelo": "cargado",
+            "etiquetas": len(det.labels)
+        })
+
     except Exception as exc:
-        return jsonify({"status": "error", "detalle": str(exc)}), 503
+
+        return jsonify({
+            "status": "error",
+            "detalle": str(exc)
+        }), 503
 
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    # ── 1. Validar presencia del archivo ────────────────────────────────
+
+    # Validar archivo
     if "file" not in request.files:
         return jsonify({
             "error": "SIN_ARCHIVO",
-            "mensaje": "No se recibió ninguna imagen. Selecciona o captura una foto primero."
+            "mensaje": "No se recibió ninguna imagen."
         }), 400
 
     file = request.files["file"]
@@ -63,67 +83,114 @@ def detect():
     if file.filename == "":
         return jsonify({
             "error": "NOMBRE_VACIO",
-            "mensaje": "El archivo no tiene nombre. Intenta seleccionarlo de nuevo."
+            "mensaje": "El archivo no tiene nombre."
         }), 400
 
-    # ── 2. Validar formato ───────────────────────────────────────────────
+    # Validar extensión
     if not allowed_file(file.filename):
-        ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "desconocido"
+
+        ext = (
+            file.filename.rsplit(".", 1)[-1]
+            if "." in file.filename
+            else "desconocido"
+        )
+
         return jsonify({
             "error": "FORMATO_NO_SOPORTADO",
-            "mensaje": f"El formato «.{ext}» no está soportado. Usa: JPG, PNG, WEBP, BMP o GIF."
+            "mensaje": f"Formato .{ext} no soportado."
         }), 415
 
-    # ── 3. Guardar imagen ────────────────────────────────────────────────
-    ext       = file.filename.rsplit(".", 1)[1].lower()
+    # Guardar archivo
+    ext = file.filename.rsplit(".", 1)[1].lower()
+
     safe_name = f"{uuid.uuid4().hex}.{ext}"
-    filepath  = os.path.join(UPLOAD_FOLDER, safe_name)
+
+    filepath = os.path.join(
+        UPLOAD_FOLDER,
+        safe_name
+    )
 
     try:
         file.save(filepath)
+
     except Exception as exc:
+
+        print("\n========== ERROR GUARDANDO ARCHIVO ==========")
+        print(type(exc).__name__)
+        print(exc)
+        print("============================================\n")
+
         return jsonify({
             "error": "ERROR_AL_GUARDAR",
-            "mensaje": "No se pudo guardar la imagen en el servidor. Intenta de nuevo."
+            "mensaje": str(exc)
         }), 500
 
-    # ── 4. Inferencia ────────────────────────────────────────────────────
+    # Inferencia
     try:
-        detector   = get_detector()
-        resultados = detector.predict(filepath, top_k=5)
+
+        detector = get_detector()
+
+        resultados = detector.predict(
+            filepath,
+            top_k=5
+        )
+
     except FileNotFoundError as exc:
+
+        print("\n========== MODELO NO ENCONTRADO ==========")
+        print(exc)
+        print("=========================================\n")
+
         return jsonify({
             "error": "MODELO_NO_ENCONTRADO",
-            "mensaje": "El modelo ONNX no está disponible. Ejecuta download_model.py y reinicia el servidor."
+            "mensaje": str(exc)
         }), 503
+
     except Exception as exc:
+
+        print("\n========== ERROR DETECTOR ==========")
+        print(type(exc).__name__)
+        print(exc)
+        print("===================================\n")
+
         return jsonify({
             "error": "ERROR_INFERENCIA",
-            "mensaje": "El modelo no pudo procesar la imagen. Prueba con una foto más nítida o en otro formato."
+            "mensaje": str(exc)
         }), 500
 
-    # ── 5. Umbral de confianza ───────────────────────────────────────────
-    detectados = [r for r in resultados if r["confianza"] >= CONF_THRESHOLD]
+    # Filtrar resultados
+    detectados = [
+        r
+        for r in resultados
+        if r["confianza"] >= CONF_THRESHOLD
+    ]
 
     if not detectados:
+
         return jsonify({
-            "status":    "sin_detecciones",
-            "mensaje":   "No se detectaron objetos con suficiente confianza. "
-                         "Intenta con una imagen más clara, mejor iluminada o con un objeto más visible.",
+            "status": "sin_detecciones",
+            "mensaje": "No se detectaron objetos con suficiente confianza.",
             "resultados": [],
-            "archivo":   safe_name,
+            "archivo": safe_name
         })
 
-    # ── 6. Respuesta exitosa ─────────────────────────────────────────────
+    # Respuesta OK
     return jsonify({
-        "status":     "ok",
-        "archivo":    safe_name,
-        "top_k":      len(detectados),
-        "resultados": detectados,
+        "status": "ok",
+        "archivo": safe_name,
+        "top_k": len(detectados),
+        "resultados": detectados
     })
 
 
 if __name__ == "__main__":
+
     print("[index] Precargando modelo...")
+
     get_detector()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+
+    app.run(
+        debug=True,
+        host="0.0.0.0",
+        port=5000
+    )
