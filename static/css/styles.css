@@ -836,6 +836,27 @@ body {
   font-size: .75rem;
 }
 
+/* ── AVISO DE BAJA RESOLUCIÓN ────────────────────────────── */
+.low-res-warning {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin: 1rem 1.25rem 0;
+  padding: .6rem .85rem;
+  border-radius: var(--radius-sm);
+  background: var(--warn-dim);
+  border: 1px solid var(--warn-border);
+  font-size: .76rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.low-res-icon {
+  color: var(--warn);
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+
 /* ── ALERTA EPP PRINCIPAL ────────────────────────────────── */
 .epp-alert {
   display: flex;

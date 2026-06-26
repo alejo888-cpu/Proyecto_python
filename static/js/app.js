@@ -33,6 +33,7 @@ const resultsList = document.getElementById("resultsList");
 const resultsTime = document.getElementById("resultsTime");
 const eppAlert = document.getElementById("eppAlert");
 const eppAlertTitle = document.getElementById("eppAlertTitle");
+const lowResWarning = document.getElementById("lowResWarning");
 const eppAlertMsg = document.getElementById("eppAlertMsg");
 const eppAlertIcon = document.getElementById("eppAlertIcon");
 
@@ -157,6 +158,13 @@ function setSendingState(isSending) {
 
 function renderResults(data) {
     const resultados = data.resultados || [];
+
+    // Aviso de baja resolución — el backend marca resolucion_baja cuando el
+    // lado menor de la imagen es muy pequeño (ver MIN_RESOLUCION en index.py).
+    // No bloquea el resultado, solo avisa para interpretar con cautela.
+    if (lowResWarning) {
+        lowResWarning.classList.toggle("hidden", !data.resolucion_baja);
+    }
 
     // Lista cruda de detecciones del modelo
     if (resultsList) {
@@ -504,7 +512,11 @@ sendImageBtn.addEventListener("click", async () => {
         }
 
         if (data.status === "sin_detecciones") {
-            if (noDetectMsg) noDetectMsg.textContent = data.mensaje || "No se detectaron objetos/rostros.";
+            let mensaje = data.mensaje || "No se detectaron objetos/rostros.";
+            if (data.resolucion_baja) {
+                mensaje += " La imagen tiene baja resolución, lo cual puede dificultar la detección — prueba con una foto más grande y nítida.";
+            }
+            if (noDetectMsg) noDetectMsg.textContent = mensaje;
             showResultPanel(noDetectState);
             return;
         }

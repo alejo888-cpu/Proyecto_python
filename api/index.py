@@ -6,6 +6,7 @@ import os
 import uuid
 from flask import Flask, request, jsonify, render_template
 from werkzeug.exceptions import RequestEntityTooLarge
+from PIL import Image
 from detector import get_detector
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +18,14 @@ CONF_THRESHOLD = 45.0  # % mínimo de confianza para considerar una detección v
                        # detector.py ya filtra internamente antes del NMS;
                        # este umbral en index.py es una segunda capa de
                        # seguridad en la misma escala (0-100).
+
+MIN_RESOLUCION = 480  # px del lado MENOR de la imagen.
+                       # Verificado empíricamente: con imágenes por debajo de
+                       # ~300px el modelo genera activaciones erráticas (falsos
+                       # positivos/negativos de Hardhat) porque el upscale hacia
+                       # los 640x640 que usa el modelo pierde demasiado detalle.
+                       # No bloqueamos la imagen, solo avisamos al usuario para
+                       # que interprete el resultado con cautela.
 
 app = Flask(
     __name__,
@@ -125,6 +134,26 @@ def detect():
             "mensaje": str(exc)
         }), 500
 
+    # Verificar resolución — imágenes muy pequeñas degradan la confiabilidad
+    # del modelo (ver comentario de MIN_RESOLUCION arriba). No bloqueamos,
+    # solo marcamos la respuesta para que el frontend avise al usuario.
+    try:
+        with Image.open(filepath) as img:
+            img_w, img_h = img.size
+    except Exception as exc:
+
+        print("\n========== IMAGEN NO LEGIBLE ==========")
+        print(type(exc).__name__)
+        print(exc)
+        print("========================================\n")
+
+        return jsonify({
+            "error": "IMAGEN_INVALIDA",
+            "mensaje": "El archivo no parece ser una imagen válida o está corrupto."
+        }), 400
+
+    resolucion_baja = min(img_w, img_h) < MIN_RESOLUCION
+
     # Inferencia
     try:
 
@@ -171,7 +200,10 @@ def detect():
             "status": "sin_detecciones",
             "mensaje": "No se detectaron objetos con suficiente confianza.",
             "resultados": [],
-            "archivo": safe_name
+            "archivo": safe_name,
+            "resolucion_baja": resolucion_baja,
+            "ancho": img_w,
+            "alto": img_h
         })
 
     # Respuesta OK
@@ -179,7 +211,10 @@ def detect():
         "status": "ok",
         "archivo": safe_name,
         "top_k": len(detectados),
-        "resultados": detectados
+        "resultados": detectados,
+        "resolucion_baja": resolucion_baja,
+        "ancho": img_w,
+        "alto": img_h
     })
 
 

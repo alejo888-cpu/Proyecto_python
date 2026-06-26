@@ -179,6 +179,8 @@ def _decode_output(output: np.ndarray, meta: dict, conf_threshold: float):
     """
     n_classes = output.shape[0] - 4
 
+    print(f"[DIAGNOSTICO] output.shape = {output.shape} | n_classes calculado = {n_classes}")
+
     # output[0:4]  -> cx, cy, w, h (en coordenadas de la imagen 640x640)
     # output[4:]   -> score por cada clase del modelo
     boxes_raw = output[0:4, :].T          # [8400, 4]
