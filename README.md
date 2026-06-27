@@ -28,18 +28,14 @@ api/
 pip install -r requirements.txt
 ```
 
-## Generar / actualizar el modelo ONNX
+## Modelos ONNX (importante)
 
-```bash
-python api/download_model.py
-```
+En este proyecto **ya se incluyen** los pesos en `api/model/best.onnx`. Por eso **no es necesario** ejecutar un script de descarga.
 
-El script intenta (en orden):
-1. **YOLOv8n** vía `ultralytics` (requiere acceso a GitHub releases)
-2. **MobileNetV2 pre-entrenado** vía `torchvision`
-3. **MobileNetV2 aleatorio** como fallback (siempre funciona; reemplazar pesos manualmente)
+Para usar tu propio modelo entrenado:
 
-Para usar tu propio modelo entrenado, coloca el archivo `.onnx` en `api/model/best.onnx`.
+- Coloca tu archivo `.onnx` en `api/model/best.onnx` (sobrescribiendo el existente) o ajusta el path en `api/detector.py`.
+
 
 ## Ejecución
 
@@ -53,14 +49,17 @@ Servidor en `http://localhost:5000`
 ## Endpoints
 
 ### `GET /`
+
 Devuelve la interfaz web.
 
 ### `GET /health`
+
 ```json
 { "status": "ok", "modelo": "cargado", "etiquetas": 1000 }
 ```
 
 ### `POST /detect`
+
 Recibe una imagen (campo `file`) y devuelve las top-5 clases:
 
 ```json
