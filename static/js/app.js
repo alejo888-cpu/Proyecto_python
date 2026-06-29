@@ -431,29 +431,37 @@ captureBtn.addEventListener("click", () => {
     console.log("[captura] video resolución:", w, "x", h);
     console.log("[captura] devicePixelRatio:", window.devicePixelRatio);
 
-    canvas.width = w;
-    canvas.height = h;
+    // Redimensionar si la imagen supera 1920px — el límite de Vercel es 4.5MB
+    // por request. El modelo trabaja a 640x640 internamente así que 1920px
+    // es más que suficiente para la detección sin perder calidad útil.
+    const MAX_DIM = 1920;
+    let drawW = w;
+    let drawH = h;
+    if (drawW > MAX_DIM || drawH > MAX_DIM) {
+        const ratio = Math.min(MAX_DIM / drawW, MAX_DIM / drawH);
+        drawW = Math.round(drawW * ratio);
+        drawH = Math.round(drawH * ratio);
+    }
 
-    console.log("[captura] canvas:", canvas.width, "x", canvas.height);
+    canvas.width = drawW;
+    canvas.height = drawH;
 
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, drawW, drawH);
 
-    // Calidad 1.0: sin recompresión JPEG adicional — la cámara del celular
-    // ya aplica su propia compresión internamente. Bajar la calidad aquí
-    // degrada bordes y texturas que el modelo necesita para detectar el casco.
+    console.log("[captura] video:", w, "x", h, "| canvas final:", drawW, "x", drawH);
+
     canvas.toBlob(
         (blob) => {
             if (!blob) {
                 alert("No se pudo capturar la imagen.");
                 return;
             }
-            console.log("[captura] blob size:", blob.size,
-                "canvas:", canvas.width, "x", canvas.height);
+            console.log("[captura] blob size:", (blob.size / 1024 / 1024).toFixed(2), "MB | canvas:", drawW, "x", drawH);
             setPreview(blob, "captura.jpg");
         },
         "image/jpeg",
-        1.0
+        0.92
     );
 });
 
