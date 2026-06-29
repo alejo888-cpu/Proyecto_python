@@ -21,7 +21,7 @@ soporte de datasets públicos.
 import os
 import numpy as np
 import onnxruntime as ort
-from PIL import Image
+from PIL import Image, ImageOps
 
 # ---------------------------------------------------------------------------
 # Rutas
@@ -109,7 +109,7 @@ def preprocess(image_path: str):
       - tensor [1, 3, 640, 640] float32 normalizado 0-1 (RGB, sin restar media)
       - metadata (scale, pad_x, pad_y, orig_w, orig_h) para reescalar cajas
     """
-    img = Image.open(image_path).convert("RGB")
+    img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
     orig_w, orig_h = img.size
 
     canvas, scale, pad_x, pad_y = _letterbox(img, INPUT_SIZE)

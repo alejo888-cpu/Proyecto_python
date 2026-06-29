@@ -141,6 +141,12 @@ def detect():
     try:
         with Image.open(filepath) as img:
             img_w, img_h = img.size
+            
+            print("\n========== INFO IMAGEN ==========")
+            print("Ancho:", img_w)
+            print("Alto :", img_h)
+            print("Modo :", img.mode)
+            print("=================================\n")
     except Exception as exc:
 
         print("\n========== IMAGEN NO LEGIBLE ==========")
