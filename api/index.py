@@ -4,13 +4,14 @@ index.py — Servidor Flask para detección/clasificación de imágenes con ONNX
 
 import os
 import uuid
+import tempfile
 from flask import Flask, request, jsonify, render_template
 from werkzeug.exceptions import RequestEntityTooLarge
 from PIL import Image
 from api.detector import get_detector
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
+UPLOAD_FOLDER = tempfile.gettempdir()
 
 ALLOWED_EXT = {"jpg", "jpeg", "png", "webp", "bmp", "gif"}
 CONF_THRESHOLD = 45.0  # % mínimo de confianza para considerar una detección válida.
