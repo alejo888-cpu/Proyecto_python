@@ -3,6 +3,7 @@ const canvas = document.getElementById("canvas");
 const fileInput = document.getElementById("fileInput");
 
 const startCameraBtn = document.getElementById("startCamera");
+const switchCameraBtn = document.getElementById("switchCamera");
 const captureBtn = document.getElementById("capture");
 const sendImageBtn = document.getElementById("sendImage");
 const btnSpinner = document.getElementById("btnSpinner");
@@ -39,6 +40,7 @@ const eppAlertIcon = document.getElementById("eppAlertIcon");
 
 let imageBlob = null;
 let mediaStream = null;
+let currentFacingMode = "environment";
 
 // ===============================
 // TABS (Subir imagen / Usar cámara)
@@ -363,55 +365,49 @@ function showCameraError(error) {
 // CAMARA
 // ===============================
 
-startCameraBtn.addEventListener("click", async () => {
-
-    console.log("BOTON CAMARA PRESIONADO");
+async function startCamera() {
 
     try {
 
-        if (!navigator.mediaDevices) {
-            console.error("mediaDevices no existe");
-            alert("Tu navegador no soporta acceso a cámara");
-            return;
-        }
-
-        if (!navigator.mediaDevices.getUserMedia) {
-            console.error("getUserMedia no existe");
-            alert("getUserMedia no está disponible");
-            return;
-        }
-
-        console.log("Solicitando cámara...");
+        stopCameraIfAny();
 
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: {
+                facingMode: { ideal: currentFacingMode },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
             audio: false
         });
 
-        console.log("CAMARA ACTIVADA");
-
         mediaStream = stream;
-
         video.srcObject = stream;
 
         if (cameraOverlay) cameraOverlay.classList.add("hidden");
 
-        video.onloadedmetadata = () => {
-            console.log("VIDEO LISTO");
-            video.play();
-        };
+        await video.play();
 
         captureBtn.disabled = false;
 
     } catch (error) {
 
         console.error("ERROR CAMARA:", error);
-
         showCameraError(error);
 
     }
 
-});
+}
+
+startCameraBtn.addEventListener("click", startCamera);
+
+if (switchCameraBtn) {
+    switchCameraBtn.addEventListener("click", async () => {
+        currentFacingMode =
+            currentFacingMode === "environment" ? "user" : "environment";
+        await startCamera();
+    });
+}
+
 // Capturar foto
 captureBtn.addEventListener("click", () => {
     const w = video.videoWidth;
