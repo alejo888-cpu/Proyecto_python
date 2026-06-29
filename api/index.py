@@ -7,7 +7,7 @@ import uuid
 from flask import Flask, request, jsonify, render_template
 from werkzeug.exceptions import RequestEntityTooLarge
 from PIL import Image
-from detector import get_detector
+from api.detector import get_detector
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
