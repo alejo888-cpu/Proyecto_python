@@ -125,6 +125,11 @@ def preprocess(image_path: str):
         "orig_w": orig_w,
         "orig_h": orig_h,
     }
+
+    # Diagnóstico: comparar imagen de cámara vs galería
+    print(f"[preprocess] orig: {orig_w}x{orig_h} | scale={scale:.4f} | pad=({pad_x},{pad_y})")
+    print(f"[preprocess] tensor shape={arr.shape} | dtype={arr.dtype} | min={arr.min():.4f} | max={arr.max():.4f}")
+
     return arr, meta
 
 
@@ -276,7 +281,14 @@ class Detector:
         outputs = self.session.run(None, {self.input_name: tensor})
         output0 = outputs[0][0]   # quitar dim de batch -> [n_classes+4, 8400]
 
+        # Log de diagnóstico: mostrar TODAS las detecciones sin filtro de umbral
+        results_raw = _decode_output(output0, meta, 0.01)  # umbral mínimo para ver todo
+        print(f"[predict] Detecciones crudas (umbral 1%): {len(results_raw)}")
+        for r in results_raw[:15]:
+            print(f"  {r['clase']:<20} {r['confianza']:6.2f}%")
+
         results = _decode_output(output0, meta, CONF_THRESHOLD)
+        print(f"[predict] Detecciones finales (umbral {CONF_THRESHOLD}%): {len(results)}")
         return results[:top_k]
 
 

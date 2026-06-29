@@ -371,14 +371,18 @@ async function startCamera() {
 
         stopCameraIfAny();
 
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // Pedimos máxima resolución sin forzar landscape — en móvil vertical
+        // 1920x1080 puede invertir alto/ancho y confundir al modelo.
+        const constraints = {
             video: {
                 facingMode: { ideal: currentFacingMode },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+                width: { ideal: 4096 },
+                height: { ideal: 4096 },
             },
             audio: false
-        });
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
         mediaStream = stream;
         video.srcObject = stream;
@@ -386,6 +390,10 @@ async function startCamera() {
         if (cameraOverlay) cameraOverlay.classList.add("hidden");
 
         await video.play();
+
+        // Log diagnóstico
+        console.log("[cámara] stream activo:",
+            video.videoWidth, "x", video.videoHeight);
 
         captureBtn.disabled = false;
 
@@ -418,22 +426,34 @@ captureBtn.addEventListener("click", () => {
         return;
     }
 
+    // Log de diagnóstico — pega esto en la consola del navegador para comparar
+    // la resolución de la cámara vs una foto subida desde galería
+    console.log("[captura] video resolución:", w, "x", h);
+    console.log("[captura] devicePixelRatio:", window.devicePixelRatio);
+
     canvas.width = w;
     canvas.height = h;
+
+    console.log("[captura] canvas:", canvas.width, "x", canvas.height);
 
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // Calidad 1.0: sin recompresión JPEG adicional — la cámara del celular
+    // ya aplica su propia compresión internamente. Bajar la calidad aquí
+    // degrada bordes y texturas que el modelo necesita para detectar el casco.
     canvas.toBlob(
         (blob) => {
             if (!blob) {
                 alert("No se pudo capturar la imagen.");
                 return;
             }
+            console.log("[captura] blob size:", blob.size,
+                "canvas:", canvas.width, "x", canvas.height);
             setPreview(blob, "captura.jpg");
         },
         "image/jpeg",
-        0.92
+        1.0
     );
 });
 
